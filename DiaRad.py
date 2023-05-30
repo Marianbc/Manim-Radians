@@ -159,3 +159,68 @@ class rollOut2(Scene):
         self.wait(2)
 
         self.clear()
+
+        # Arc Length Scene
+        title = Title("Arc Length", font_size= 35, match_underline_width_to_text= True, underline_buff= 0.1)
+        self.play(Create(title))
+        ang = ValueTracker(0)
+        angle = always_redraw(lambda : Arc(
+            start_angle= 0,
+            angle = ang.get_value(),
+            radius= 0.3
+        ))
+        angle_tex = always_redraw(lambda : MathTex(rf"{round(np.rad2deg(ang.get_value()),2)} ^\circ", font_size= 15).move_to(np.array([0.5,0.2,0])))
+        arc1 = always_redraw(lambda : Arc(
+            start_angle= 0,
+            angle = ang.get_value(),
+            radius= 1,
+            color= RED
+        ))
+        radius = Line(start= ORIGIN, end= arc1.get_start())
+        moving_radius = always_redraw(lambda : Line(start= ORIGIN, end= arc1.get_end()))
+
+        self.add(arc1, radius, moving_radius, angle, angle_tex)
+        self.play(ang.animate.increment_value(PI/4), run_time= 3)
+        arc1.clear_updaters()
+        angle.clear_updaters()
+        moving_radius.clear_updaters()
+        angle_tex.clear_updaters()
+        arc1_copy = arc1.copy()
+        arc2 = Arc(
+            start_angle= PI/4,
+            angle= 7*(PI/4),
+            radius= 1,
+            color= YELLOW
+        )
+        self.play(Create(arc2))
+
+        self.wait(1)
+        l1 = Line(start= np.array([1,0,0]), end= np.array([1,(PI/4),0]), color= RED)
+        l1.rotate(PI/2 - l1.get_angle())
+        
+        self.add(arc1)
+        self.play(arc1.animate.become(l1).shift(RIGHT * 2), run_time= 2)
+        numline = NumberLine(length= l1.get_length(), x_range= [0,PI/4,PI/4]).rotate(PI/2).next_to(l1, RIGHT, buff= 2.1)
+        length = MathTex(r"{\frac{\pi}{4}}", font_size= 30).next_to(numline, RIGHT)
+        self.play(Create(numline))
+        self.play(Write(length))
+        self.wait(1)
+        self.play(Rotate(radius, angle= -PI/2, about_point= radius.get_right()))
+        self.play(radius.animate.next_to(numline, LEFT, buff= 0.2))
+        times_angle = MathTex(r"\times", font_size= 25).next_to(radius, LEFT)
+        self.play(
+            Create(times_angle),
+            angle_tex.animate.next_to(times_angle, LEFT, buff= 0.1).scale(1.3)
+        )
+        self.wait(2)
+        radius_copy = radius.copy().stretch_to_fit_height(PI/4)
+        self.play(
+            radius.animate.stretch_to_fit_height(PI/4),
+            VGroup(angle_tex, times_angle).animate.become(radius_copy)
+        )
+        self.wait(3)
+        self.play(FadeOut(VGroup(numline, length, radius, angle_tex, times_angle)))
+        self.play(arc1.animate.become(arc1_copy), run_time= 2)
+        self.wait(2)
+
+        self.clear()
