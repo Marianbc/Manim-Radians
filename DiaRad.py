@@ -160,7 +160,7 @@ class rollOut2(Scene):
 
         self.clear()
 
-        # Arc Length Scene
+
         title = Title("Arc Length", font_size= 35, match_underline_width_to_text= True, underline_buff= 0.1)
         self.play(Create(title))
         ang = ValueTracker(0)
@@ -224,3 +224,55 @@ class rollOut2(Scene):
         self.wait(2)
 
         self.clear()
+
+        ang = ValueTracker(2*PI)
+        background_circle = Arc(
+            start_angle= 0,
+            angle= 2*PI,
+            radius= 1,
+            color= "#112ff2"
+        )
+        foreground_circle = always_redraw(lambda : Arc(
+            start_angle = 0,
+            angle = ang.get_value(),
+            radius =1,
+            color= "#43e81a"
+        ))
+
+        # Building up a NumberLine and labeling the points
+        angle = 0
+        numline = NumberLine(length= 2*PI, x_range= [0,2*PI, PI/6], unit_size= PI/6).rotate(PI/2).to_edge(LEFT).shift(RIGHT * 0.7)
+        rad_scl = Tex("Radian Scale", font_size= 25).next_to(numline, UP, buff= 0.2)
+        MathTex.set_default(font_size= 20)
+        angles_rad = list(map(MathTex, [
+            r"0",
+            r"\frac{\pi}{6}",
+            r"\frac{\pi}{3}",
+            r"\frac{\pi}{2}",
+            r"\frac{2\pi}{3}",
+            r"\frac{5\pi}{6}",
+            r"\pi",
+            r"\frac{7\pi}{6}",
+            r"\frac{4\pi}{3}",
+            r"\frac{3\pi}{2}",
+            r"\frac{5\pi}{3}",
+            r"\frac{11\pi}{6}",
+            r"2\pi",
+        ]))
+        for i in range(0, len(angles_rad)):
+            angles_rad[i].move_to(numline.n2p(PI/6 * i)).shift(LEFT * 0.5)
+        numline.add(VGroup(*angles_rad))
+
+        line = always_redraw(lambda : Line(start= numline.n2p(0), end= numline.n2p(ang.get_value()), color= BLUE))
+        dot = always_redraw(lambda : Dot(point= line.get_end()))
+        ang_times_rad = always_redraw(lambda : MathTex(rf"1\times {round(np.rad2deg(ang.get_value()),2)} ^\circ").next_to(dot, RIGHT, buff= 0.2))
+
+        self.play(Create(VGroup(background_circle, foreground_circle, numline, line, ang_times_rad, dot)), run_time= 2)
+        self.wait(2)
+
+        self.play(ang.animate.increment_value(-PI), run_time= 8)
+        self.wait(2)
+        self.play(ang.animate.increment_value(-PI/2), run_time= 5)
+        self.wait(2)
+        self.play(ang.animate.increment_value(-PI/4), run_time= 3)
+        self.wait(2)
