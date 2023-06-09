@@ -226,53 +226,87 @@ class rollOut2(Scene):
         self.clear()
 
         ang = ValueTracker(2*PI)
+        n = 0
+        colors= ["#e01010", "#edda05", "#2005ed", "#b7ed05", "#e307d8", "#07e3cd", "#d1e307", "#07e3df"]
         background_circle = Arc(
             start_angle= 0,
             angle= 2*PI,
             radius= 1,
-            color= "#112ff2"
-        )
+            color= "#3fed05"
+        ).shift(LEFT * 3)
         foreground_circle = always_redraw(lambda : Arc(
             start_angle = 0,
             angle = ang.get_value(),
             radius =1,
-            color= "#43e81a"
-        ))
+            color= colors[n]
+        ).shift(LEFT * 3))
 
         # Building up a NumberLine and labeling the points
         angle = 0
-        numline = NumberLine(length= 2*PI, x_range= [0,2*PI, PI/6], unit_size= PI/6).rotate(PI/2).to_edge(LEFT).shift(RIGHT * 0.7)
+        numline = NumberLine(length= 2*PI, x_range= [0,2*PI, PI/6], unit_size= PI/6).rotate(PI/2).shift(RIGHT * 3).set_color(color= BLACK)
+        loading_bar = Rectangle(width= 0.15).stretch_to_fit_height(numline.get_length()).move_to(numline.get_center())
         rad_scl = Tex("Radian Scale", font_size= 25).next_to(numline, UP, buff= 0.2)
-        MathTex.set_default(font_size= 20)
+        MathTex.set_default(font_size= 35)
         angles_rad = list(map(MathTex, [
             r"0",
-            r"\frac{\pi}{6}",
-            r"\frac{\pi}{3}",
-            r"\frac{\pi}{2}",
-            r"\frac{2\pi}{3}",
-            r"\frac{5\pi}{6}",
-            r"\pi",
-            r"\frac{7\pi}{6}",
-            r"\frac{4\pi}{3}",
-            r"\frac{3\pi}{2}",
-            r"\frac{5\pi}{3}",
-            r"\frac{11\pi}{6}",
-            r"2\pi",
+            r"1",
+            r"2",
         ]))
         for i in range(0, len(angles_rad)):
-            angles_rad[i].move_to(numline.n2p(PI/6 * i)).shift(LEFT * 0.5)
-        numline.add(VGroup(*angles_rad))
+            angles_rad[i].move_to(numline.n2p(PI * i)).shift(LEFT * 0.5)
+        pi_tex = MathTex(r'\cdot\ \pi \cdot', font_size= 50).next_to(angles_rad[1], LEFT* 1.5)
+        pi_tex[0][0].set_color(BLACK)
+        numline.add(VGroup(*angles_rad), pi_tex)
 
-        line = always_redraw(lambda : Line(start= numline.n2p(0), end= numline.n2p(ang.get_value()), color= BLUE))
+        line = always_redraw(lambda : Line(start= numline.n2p(0), end= numline.n2p(ang.get_value()), color= colors[n], stroke_width= 12))
         dot = always_redraw(lambda : Dot(point= line.get_end()))
-        ang_times_rad = always_redraw(lambda : MathTex(rf"1\times {round(np.rad2deg(ang.get_value()),2)} ^\circ").next_to(dot, RIGHT, buff= 0.2))
+        ang_times_rad = always_redraw(lambda : MathTex(rf"1\times {round(np.rad2deg(ang.get_value()),2)} ^\circ", font_size= 30).next_to(line.get_top(), RIGHT, buff= 0.2))
 
-        self.play(Create(VGroup(background_circle, foreground_circle, numline, line, ang_times_rad, dot)), run_time= 2)
+        self.play(Create(VGroup(background_circle, foreground_circle, loading_bar, ang_times_rad, line, VGroup(*angles_rad), pi_tex)), run_time= 2)
         self.wait(2)
 
         self.play(ang.animate.increment_value(-PI), run_time= 8)
         self.wait(2)
         self.play(ang.animate.increment_value(-PI/2), run_time= 5)
         self.wait(2)
-        self.play(ang.animate.increment_value(-PI/4), run_time= 3)
+        self.play(ang.animate.increment_value(-PI/2), run_time= 3)
         self.wait(2)
+
+        cir_to_cirm = background_circle.copy().set_color(background_circle.get_color())
+        self.add(cir_to_cirm)
+        circumference = NumberLine(length= 2*PI, x_range= [0,2*PI, PI], unit_size= PI/6).rotate(PI/2).next_to(loading_bar, RIGHT * 8)
+        circumference_line = always_redraw(lambda : Line(start= circumference.n2p(0), end= circumference.n2p(ang.get_value()), color= BLUE))
+        self.play(cir_to_cirm.animate.become(circumference), Create(circumference_line))
+        self.wait(2)
+
+        radius = always_redraw(lambda : Line(start= background_circle.get_center(), end= foreground_circle.get_end()))
+        radiusR = radius.copy()
+        radius_tex = MathTex("1").next_to(radius, UP)
+        self.play(Create(VGroup(radius, radiusR, radius_tex)))
+        self.wait(2)
+        self.play(
+            radius_tex.animate.next_to(pi_tex, LEFT),
+            pi_tex.animate.set_color(WHITE)
+        )
+        self.wait(1)
+
+        equals = always_redraw(lambda : MathTex(r"=", font_size= 30).next_to(ang_times_rad, RIGHT))
+        self.play(Write(equals))
+
+        ang_times_rad[0][-1].set_color(WHITE)        
+        tmps_cir = list()
+        tmps_line = list()
+        radiuses = list()
+        for i in range(6):
+            n = n + 1
+            self.play(ang.animate.increment_value(PI/6))
+            rad = radius.copy()
+            tmp_cir = foreground_circle.copy()
+            tmps_cir.append(tmp_cir)
+            tmp_line = line.copy()
+            tmps_line.append(tmp_line)
+            radiuses.append(rad)
+            self.add(tmp_cir, rad, tmp_line)
+            for j in range(len(tmps_cir)):
+                self.bring_to_front(tmps_cir[(len(tmps_cir)-1) -j])
+                self.bring_to_front(tmps_line[(len(tmps_line)-1) -j])
